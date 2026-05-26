@@ -1,0 +1,14 @@
+# vcs import populates src/ on the host. Each entry is its own git repo and
+# is tracked by src.repos / src.private.repos, not by this meta-repo.
+src/
+
+# docker compose down -v cleans named volumes, but local override files can
+# accumulate. Keep them out of git.
+compose.override.yaml
+.env
+.env.local
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store

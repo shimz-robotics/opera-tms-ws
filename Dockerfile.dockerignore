@@ -1,0 +1,12 @@
+# Per-Dockerfile ignore file (Docker 20.10+ with BuildKit). Scoped to the
+# meta-repo's Dockerfile only.
+#
+# Build context is the meta-repo root. Source packages live under ./src/ and
+# are bind-mounted into the container at runtime — they are NOT copied into
+# the image, so excluding src/ from the build context keeps it tiny.
+#
+# Allowlist what the Dockerfile actually COPYs (requirements.txt + scripts/).
+*
+!requirements.txt
+!scripts/entrypoint.sh
+!scripts/restore-db.sh

@@ -1,0 +1,11 @@
+# Mirrored from ros2_tms_for_construction/requirements.txt.
+# CI verifies these two files stay in sync. Bump src.repos pin and this file
+# together when upstream changes its requirements.
+pymongo==4.3.3
+open3d==0.16.0
+numpy==1.22.3
+catkin-pkg==0.5.2
+empy==3.3.4
+lark==1.1.3
+setuptools==58.2.0
+numpy-quaternion==2022.4.3

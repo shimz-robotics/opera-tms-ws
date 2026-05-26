@@ -1,0 +1,12 @@
+# Private deps fetched on the host AFTER src.repos. Only members of the
+# respective orgs / collaborators can clone these.
+#
+#   vcs import src/ < src.private.repos || true
+#
+# The `|| true` is intentional: vcstool has no skip-on-auth-failure flag.
+# Each repo is cloned independently, so one auth failure does not block the
+# rest. Members get all entries; non-members get a partial import (and a
+# non-zero exit ignored by `|| true`).
+#
+# Currently empty: this file is a placeholder for future shimz-internal repos.
+repositories: {}
