@@ -84,7 +84,7 @@ docker compose exec tms restore-db.sh                 # DB seed も投入し直�
 
 ## requirements.txt 同期
 
-`requirements.txt` は meta-repo に vendor している。`src.repos` の `ros2_tms_for_construction` pin を bump する時は、同 commit の `requirements.txt` と meta-repo の `requirements.txt` を手動で diff して同期させること（CI チェックは未導入、必要性が見えたら再検討）。
+`requirements.txt` は本リポジトリ直下に vendor している。`src.repos` の `ros2_tms_for_construction` pin を bump する時は、同 commit の `requirements.txt` とこちらの `requirements.txt` を手動で diff して同期させること（CI チェックは未導入、必要性が見えたら再検討）。
 
 ```bash
 # bump 後の同期チェック例

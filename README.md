@@ -14,11 +14,11 @@ ROS 2 TMS for Construction の **開発用 meta-workspace**。Docker + vcstool �
 | 役割 | 場所 |
 |---|---|
 | 誰でもまず動かせる reference | `irvs/ros2_tms_for_construction:docker/` |
-| 全依存を src.repos で管理する開発・実験環境 | この meta-repo |
+| 全依存を src.repos で管理する開発・実験環境 | このリポジトリ |
 
-両方を並存させる。本 meta-repo の `Dockerfile` / `entrypoint.sh` / `restore-db.sh` / `launch/bringup.launch.yaml` は上流の `docker/` をベースにしているため、上流が更新されたら追従が必要。
+両方を並存させる。本リポジトリの `Dockerfile` / `entrypoint.sh` / `restore-db.sh` / `launch/bringup.launch.yaml` は上流の `docker/` をベースにしているため、上流が更新されたら追従が必要。
 
-## Quick Start
+## 環境構築
 
 ```bash
 git clone https://github.com/shimz-robotics/opera-tms-ws.git
@@ -32,9 +32,34 @@ xhost +local:
 UID=$(id -u) GID=$(id -g) docker compose build      # 初回 20-30 分
 docker compose up -d                                  # 初回起動時にコンテナ内 colcon build (10 分)
 docker compose exec tms restore-db.sh                # DB seed 投入 (初回のみ)
+```
 
-./scripts/shell.sh                                    # コンテナ shell に入る
-./scripts/exec.sh ros2 node list                     # ホストから 1 コマンド
+前提条件（ホスト OS / vcstool / X サーバ 等）と各ステップの解説は [docs/setup.md](docs/setup.md) 参照。
+
+## 動作確認 (task_id=4)
+
+Unity ([shimz-robotics/OperaSim-PhysX](https://github.com/shimz-robotics/OperaSim-PhysX)) を別途起動した状態で、以下を 2 ターミナルで実行:
+
+### Terminal 1: Unity ↔ ROS 2 ブリッジ
+
+```bash
+./scripts/exec.sh ros2 launch ros_tcp_endpoint endpoint.py
+```
+
+Unity の **再生ボタンを押して接続を確認した後**、Terminal 2 を起動する（順序を守らないと `zx200_bringup` の `ros2_control` が初期姿勢を取得できず不安定になる）。
+
+### Terminal 2: bringup (zx200 / tms_if / tms_ts を 3 段連鎖起動)
+
+```bash
+./scripts/exec.sh ros2 launch /workspace/src/ros2_tms_for_construction/docker/launch/bringup.launch.yaml
+```
+
+RViz の初期姿勢回避（`boom_joint` を下げて Plan & Execute）→ `tms_ur_button` の緑ボタン押下までの詳細手順は [docs/usage.md](docs/usage.md) 参照。
+
+### 終了
+
+```bash
+docker compose down     # コンテナ停止
 ```
 
 ## ドキュメント
@@ -46,4 +71,4 @@ docker compose exec tms restore-db.sh                # DB seed 投入 (初回の
 ## 関連
 
 - 上流: [irvs/ros2_tms_for_construction](https://github.com/irvs/ros2_tms_for_construction)
-- Unity 側シミュレータ: [shimz-robotics/OperaSim-PhysX](https://github.com/shimz-robotics/OperaSim-PhysX) — zx200 link の DeadTime tuning で制御の振動挙動を緩和済み（`shimz-main` branch）。Unity fork 版 `zx200_ros2` は本 meta-repo では取り込まない
+- Unity 側シミュレータ: [shimz-robotics/OperaSim-PhysX](https://github.com/shimz-robotics/OperaSim-PhysX) — zx200 link の DeadTime tuning で制御の振動挙動を緩和済み（`shimz-main` branch）。
