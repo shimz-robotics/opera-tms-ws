@@ -30,10 +30,6 @@ services:
       - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
       # Cyclone DDS: 任意で XML config を指す。未設定なら built-in default (host NIC の multicast) で動く。
       - CYCLONEDDS_URI=${CYCLONEDDS_URI:-}
-      # Zenoh: zenohd への接続。zenoh-router profile を上げているなら localhost:7447 を見る。
-      - ZENOH_ROUTER_CHECK_ATTEMPTS=${ZENOH_ROUTER_CHECK_ATTEMPTS:-}
-      - ZENOH_SESSION_CONFIG_URI=${ZENOH_SESSION_CONFIG_URI:-}
-      - ZENOH_CONFIG_OVERRIDE=${ZENOH_CONFIG_OVERRIDE:-}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${XAUTHORITY:-${HOME}/.Xauthority}:/home/ros/.Xauthority:ro
@@ -47,24 +43,6 @@ services:
       - mongodb
     stdin_open: true
     tty: true
-
-  # rmw_zenoh を使う時のみ起動する router (zenohd)。
-  # `docker compose --profile zenoh up -d` で tms と並列で上がる。
-  # tms image をそのまま再利用 (zenohd binary は ros-humble-rmw-zenoh-cpp に同梱)。
-  zenoh-router:
-    image: opera-tms-dev:latest
-    container_name: opera_tms_zenohd
-    profiles:
-      - zenoh
-    network_mode: host
-    user: ros
-    environment:
-      - RMW_IMPLEMENTATION=rmw_zenoh_cpp
-      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
-    # entrypoint.sh の colcon build を skip するため bash を直接叩いて zenohd を起動する。
-    entrypoint: ["/bin/bash", "-lc"]
-    command: ["source /opt/ros/humble/setup.bash && exec ros2 run rmw_zenoh_cpp rmw_zenohd"]
-    restart: unless-stopped
 
 volumes:
   mongodb_data:

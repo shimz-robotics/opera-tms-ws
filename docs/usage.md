@@ -39,9 +39,9 @@ docker compose down -v      # named volume ごと削除（DB・build キャッ�
 
 `src.repos` / `Dockerfile` を更新したときは `down -v` してから rebuild する（`down` だけでは old artifact が再利用される）。詳細は [development.md](development.md) 参照。
 
-## RMW 切替 (Cyclone DDS / Zenoh)
+## RMW 切替 (Cyclone DDS)
 
-デフォルトは Fast DDS (`rmw_fastrtps_cpp`)。3 RMW すべて image に同梱済 (`ros-humble-rmw-{fastrtps,cyclonedds,zenoh}-cpp`)。ホスト側に DDS / Zenoh を別途 install する必要はない (RMW プラグインは container 内 ROS 2 プロセスに linked-in)。
+デフォルトは Fast DDS (`rmw_fastrtps_cpp`)。`rmw_fastrtps_cpp` / `rmw_cyclonedds_cpp` を image に同梱済。host 側に DDS を別途 install する必要はない (RMW プラグインは container 内 ROS 2 プロセスに linked-in)。
 
 ### Cyclone DDS
 
@@ -59,23 +59,41 @@ CYCLONEDDS_URI=file:///workspace/src/cyclonedds.conf \
 
 profile XML は host の `src/cyclonedds.conf` (gitignored) に置けば `./src/:/workspace/src/` の bind mount 経由で container 内に見える。
 
-### Zenoh
-
-```bash
-RMW_IMPLEMENTATION=rmw_zenoh_cpp docker compose --profile zenoh up -d
-```
-
-`--profile zenoh` で `zenoh-router` (zenohd) も同時起動。tms 内のノードは `localhost:7447` の router を経由する (`network_mode: host` で localhost 共有)。
-
 ### env 注入の確認
 
 ```bash
 docker inspect opera_tms_dev \
   --format '{{range .Config.Env}}{{println .}}{{end}}' \
-  | grep -E "RMW|CYCLONE|ZENOH|DOMAIN"
+  | grep -E "RMW|CYCLONE|DOMAIN"
 ```
 
 `.env` の export 漏れで silent に Fast DDS に戻ることがある (compose の `${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}` のため)。起動後に必ず確認。
+
+### Zenoh (WAN / 複数現場集約)
+
+`rmw_zenoh` は **container には install しない** 方針。WAN / NAT 越しや複数現場集約には、host で **[zenoh-bridge-ros2dds](https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds)** を立てて Cyclone DDS の通信を Zenoh network に bridge する。container 側はそのまま Cyclone DDS で OK (`network_mode: host` で host の bridge と localhost multicast 経由でやり取り)。
+
+参考: [shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera) でも同じ運用 (container = Cyclone DDS、host = `zenoh-bridge-ros2dds --config launch_content/config-nodered.json5`)。config ファイルは nodered repo の `launch_content/config-*.json5` (router / nodered / dump / pit / reference) を参考に role 別に作成。
+
+host install (Eclipse Zenoh の deb repo):
+
+```bash
+echo "deb [trusted=yes] https://download.eclipse.org/zenoh/debian-repo/ /" \
+  | sudo tee /etc/apt/sources.list.d/zenoh.list
+sudo apt update && sudo apt install -y zenoh-bridge-ros2dds
+```
+
+起動例:
+
+```bash
+# host 側 (別 terminal)
+zenoh-bridge-ros2dds --config /path/to/config.json5
+
+# container 側はそのまま Cyclone DDS で up
+RMW_IMPLEMENTATION=rmw_cyclonedds_cpp docker compose up -d
+```
+
+詳細運用 (config 設計、複数現場 topology、認証) は別途 docs を整備する想定 (TODO)。
 
 ## Node-RED (nodered-ros2-opera) との並列運用
 

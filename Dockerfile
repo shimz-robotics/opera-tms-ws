@@ -40,7 +40,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgoogle-glog-dev \
         ros-humble-robot-localization \
         ros-humble-rmw-cyclonedds-cpp \
-        ros-humble-rmw-zenoh-cpp \
     && apt-get install -y --no-install-recommends \
         # moveit (used by tms_if_for_opera MoveGroupInterface + zx200_ros2 SRDF)
         ros-humble-moveit-common \
