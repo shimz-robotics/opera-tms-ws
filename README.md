@@ -64,14 +64,14 @@ docker compose down     # コンテナ停止
 
 ## RMW 切替
 
-デフォルトは Fast DDS。`RMW_IMPLEMENTATION=rmw_cyclonedds_cpp docker compose up -d` で Cyclone DDS に切替可能 (2 RMW を image 同梱)。
+デフォルトは Cyclone DDS (`rmw_cyclonedds_cpp`)。Node-RED 並列運用と host `zenoh-bridge-ros2dds` 経由の WAN 接続が両方とも Cyclone DDS 前提なため、container 側もそれに揃える。Fast DDS が必要な場合は env で override。
 
 | RMW | 起動コマンド |
 |---|---|
-| Fast DDS (default) | `docker compose up -d` |
-| Cyclone DDS | `RMW_IMPLEMENTATION=rmw_cyclonedds_cpp docker compose up -d` |
+| Cyclone DDS (default) | `docker compose up -d` |
+| Fast DDS | `RMW_IMPLEMENTATION=rmw_fastrtps_cpp docker compose up -d` |
 
-Node-RED ([shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera)) と同 host 並列運用する手順 (nodered が Cyclone DDS hardcoded なので TMS 側も Cyclone DDS に揃える) と、WAN / 複数現場集約用に host で zenoh-bridge-ros2dds を立てる方針は [docs/usage.md](docs/usage.md) 参照。
+Node-RED ([shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera)) との同 host 並列運用手順と、WAN / 複数現場集約用に host で zenoh-bridge-ros2dds を立てる方針は [docs/usage.md](docs/usage.md) 参照。
 
 ## ドキュメント
 

@@ -39,25 +39,29 @@ docker compose down -v      # named volume ごと削除（DB・build キャッ�
 
 `src.repos` / `Dockerfile` を更新したときは `down -v` してから rebuild する（`down` だけでは old artifact が再利用される）。詳細は [development.md](development.md) 参照。
 
-## RMW 切替 (Cyclone DDS)
+## RMW 切替
 
-デフォルトは Fast DDS (`rmw_fastrtps_cpp`)。`rmw_fastrtps_cpp` / `rmw_cyclonedds_cpp` を image に同梱済。host 側に DDS を別途 install する必要はない (RMW プラグインは container 内 ROS 2 プロセスに linked-in)。
+デフォルトは Cyclone DDS (`rmw_cyclonedds_cpp`)。`rmw_fastrtps_cpp` / `rmw_cyclonedds_cpp` を image に同梱済。host 側に DDS を別途 install する必要はない (RMW プラグインは container 内 ROS 2 プロセスに linked-in)。
 
-### Cyclone DDS
+### Cyclone DDS (default)
 
 ```bash
-RMW_IMPLEMENTATION=rmw_cyclonedds_cpp docker compose up -d
+docker compose up -d
 ```
 
-profile を指定する場合 (例: 後述の Node-RED 並列運用):
+profile XML を指定する場合 (例: 後述の Node-RED 並列運用):
 
 ```bash
-RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
-CYCLONEDDS_URI=file:///workspace/src/cyclonedds.conf \
-  docker compose up -d
+CYCLONEDDS_URI=file:///workspace/src/cyclonedds.conf docker compose up -d
 ```
 
 profile XML は host の `src/cyclonedds.conf` (gitignored) に置けば `./src/:/workspace/src/` の bind mount 経由で container 内に見える。
+
+### Fast DDS に戻す
+
+```bash
+RMW_IMPLEMENTATION=rmw_fastrtps_cpp docker compose up -d
+```
 
 ### env 注入の確認
 
@@ -67,7 +71,7 @@ docker inspect opera_tms_dev \
   | grep -E "RMW|CYCLONE|DOMAIN"
 ```
 
-`.env` の export 漏れで silent に Fast DDS に戻ることがある (compose の `${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}` のため)。起動後に必ず確認。
+起動後に必ず確認。`.env` で値を上書きしたつもりでも、shell の export 漏れで compose の default にフォールバックすることがある。
 
 ### Zenoh (WAN / 複数現場集約)
 
@@ -89,8 +93,8 @@ sudo apt update && sudo apt install -y zenoh-bridge-ros2dds
 # host 側 (別 terminal)
 zenoh-bridge-ros2dds --config /path/to/config.json5
 
-# container 側はそのまま Cyclone DDS で up
-RMW_IMPLEMENTATION=rmw_cyclonedds_cpp docker compose up -d
+# container 側はデフォルトで Cyclone DDS なのでそのまま up
+docker compose up -d
 ```
 
 詳細運用 (config 設計、複数現場 topology、認証) は別途 docs を整備する想定 (TODO)。
@@ -122,11 +126,9 @@ nodered 側 `launch_content/cyclone_profile.xml` と同等の内容を TMS 側�
 ### 起動
 
 ```bash
-# TMS 側 (このリポ)
+# TMS 側 (このリポ) — Cyclone DDS がデフォルトなので env override 不要
 cd opera-tms-ws
-RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
-CYCLONEDDS_URI=file:///workspace/src/cyclonedds.conf \
-  docker compose up -d
+CYCLONEDDS_URI=file:///workspace/src/cyclonedds.conf docker compose up -d
 
 # Node-RED 側 (別リポ)
 cd ../nodered-ros2-opera
