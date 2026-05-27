@@ -62,6 +62,18 @@ RViz の初期姿勢回避（`boom_joint` を下げて Plan & Execute）→ `tms
 docker compose down     # コンテナ停止
 ```
 
+## RMW 切替
+
+デフォルトは Fast DDS。`RMW_IMPLEMENTATION` で Cyclone DDS / Zenoh に切替可能 (3 RMW すべて image 同梱)。
+
+| RMW | 起動コマンド |
+|---|---|
+| Fast DDS (default) | `docker compose up -d` |
+| Cyclone DDS | `RMW_IMPLEMENTATION=rmw_cyclonedds_cpp docker compose up -d` |
+| Zenoh | `RMW_IMPLEMENTATION=rmw_zenoh_cpp docker compose --profile zenoh up -d` |
+
+Node-RED ([shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera)) と並列運用する手順は [docs/usage.md](docs/usage.md) 参照 (nodered 側が Cyclone DDS hardcoded のため TMS 側も Cyclone DDS に揃える)。
+
 ## ドキュメント
 
 - [docs/setup.md](docs/setup.md) — 前提・ワークスペース構造・起動手順（詳細）
