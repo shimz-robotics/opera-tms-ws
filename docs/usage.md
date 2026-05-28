@@ -49,7 +49,7 @@ docker compose down -v      # named volume ごと削除（DB・build キャッ�
 docker compose up -d
 ```
 
-これだけで OK。compose.yaml で `CYCLONEDDS_URI=/opt/opera-tms/cyclonedds.conf` を hardcode、repo 直下の [`cyclonedds.conf`](../cyclonedds.conf) (localhost-only multicast + `<DontRoute>true</DontRoute>`) を bind mount しているため、起動時から nodered と同一 profile で動く。env override は不要。
+これだけで OK。compose.yaml で `CYCLONEDDS_URI=/opt/opera-cps/cyclonedds.conf` を hardcode、repo 直下の [`cyclonedds.conf`](../cyclonedds.conf) (localhost-only multicast + `<DontRoute>true</DontRoute>`) を bind mount しているため、起動時から nodered と同一 profile で動く。env override は不要。
 
 ### Fast DDS に戻す
 
@@ -68,14 +68,14 @@ RMW_IMPLEMENTATION=rmw_fastrtps_cpp docker compose up -d
 ### env 注入の確認
 
 ```bash
-docker inspect opera_tms_dev \
+docker inspect opera_cps_dev \
   --format '{{range .Config.Env}}{{println .}}{{end}}' \
   | grep -E "RMW|CYCLONE|DOMAIN"
 ```
 
 期待値:
 - `RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
-- `CYCLONEDDS_URI=/opt/opera-tms/cyclonedds.conf`
+- `CYCLONEDDS_URI=/opt/opera-cps/cyclonedds.conf`
 - `ROS_DOMAIN_ID=0`
 
 ### Zenoh (WAN / 複数現場集約)
@@ -112,7 +112,7 @@ docker compose up -d
 
 ```bash
 # TMS 側 (このリポ)
-cd opera-tms-ws
+cd opera-cps-ws
 docker compose up -d
 
 # Node-RED 側 (別リポ)

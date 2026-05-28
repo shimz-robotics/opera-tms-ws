@@ -60,16 +60,16 @@ vcs import --force src/ < src.repos     # 既存 dir を destroy して再 clone
 entrypoint は sentinel `/workspace/install/.colcon_build_succeeded` でガードされているので、sentinel を消して restart すれば初回扱いで再実行:
 
 ```bash
-docker exec opera_tms_dev rm -f /workspace/install/.colcon_build_succeeded
-docker restart opera_tms_dev
-docker logs -f opera_tms_dev             # build 進捗
+docker exec opera_cps_dev rm -f /workspace/install/.colcon_build_succeeded
+docker restart opera_cps_dev
+docker logs -f opera_cps_dev             # build 進捗
 ```
 
 named volume の `build/` `install/` `log/` は残ったまま増分 build なので速い。完全クリーンしたければ:
 
 ```bash
-docker exec opera_tms_dev rm -rf /workspace/build /workspace/install /workspace/log
-docker restart opera_tms_dev
+docker exec opera_cps_dev rm -rf /workspace/build /workspace/install /workspace/log
+docker restart opera_cps_dev
 ```
 
 ## ⑥ Dockerfile / requirements.txt 変更
