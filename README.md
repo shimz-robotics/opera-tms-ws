@@ -70,7 +70,15 @@ docker compose down     # コンテナ停止
 
 デフォルトは Cyclone DDS (`rmw_cyclonedds_cpp`)。compose.yaml で `CYCLONEDDS_URI` を repo 直下の [`cyclonedds.conf`](cyclonedds.conf) (localhost-only multicast + DontRoute) に固定済なので、Node-RED ([shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera)) の `launch_content/cyclone_profile.xml` と同一 profile になり、同 host 内 container 間で discovery が両方向に通る。Fast DDS が必要なら `.env` で `RMW_IMPLEMENTATION=rmw_fastrtps_cpp` に上書き。
 
-詳細 (Node-RED 並列運用手順、WAN / 複数現場集約用に host で zenoh-bridge-ros2dds を立てる方針) は [docs/usage.md](docs/usage.md) 参照。
+### LAN 上の別 PC と直接 DDS 接続したい場合
+
+`cyclonedds.conf` は **同 host 並列運用に最適化** された localhost-only profile のため、別 PC 上の ROS 2 ノードとは直接 discover しない。次のいずれかを選択:
+
+1. **host で [`zenoh-bridge-ros2dds`](https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds) を立てる** (推奨、WAN / NAT / 複数現場でもそのまま使える、詳細 [docs/usage.md](docs/usage.md))
+2. **`compose.override.yaml`** で LAN 向け interface 指定の profile (`<NetworkInterface address="<host-IP>"/>` 等) を bind mount し直す
+3. **Fast DDS に切り替え** (`.env` で `RMW_IMPLEMENTATION=rmw_fastrtps_cpp`)、LAN 内自動 discovery を利用
+
+詳細 (Node-RED 並列運用手順、host zenoh-bridge-ros2dds 起動手順) は [docs/usage.md](docs/usage.md) 参照。
 
 ## ドキュメント
 
