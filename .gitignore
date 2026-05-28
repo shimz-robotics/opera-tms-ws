@@ -8,9 +8,6 @@ compose.override.yaml
 .env
 .env.local
 
-# Cyclone DDS profile for Node-RED 並列運用 (private repo 由来や個別調整あり)
-cyclonedds.conf
-
 # Editor / OS noise
 .vscode/
 .idea/

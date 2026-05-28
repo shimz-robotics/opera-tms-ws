@@ -24,17 +24,21 @@ ROS 2 TMS for Construction の **開発用 meta-workspace**。Docker + vcstool �
 git clone https://github.com/shimz-robotics/opera-tms-ws.git
 cd opera-tms-ws
 
+# per-host 設定 (UID/GID 等) を .env に固定 — 初回のみ
+cp .env.example .env
+sed -i "s/^UID=.*/UID=$(id -u)/; s/^GID=.*/GID=$(id -g)/" .env
+
 mkdir -p src
 vcs import src/ < src.repos
 vcs import src/ < src.private.repos || true
 
 xhost +local:
-UID=$(id -u) GID=$(id -g) docker compose build      # 初回 20-30 分
-docker compose up -d                                  # 初回起動時にコンテナ内 colcon build (10 分)
-docker compose exec tms restore-db.sh                # DB seed 投入 (初回のみ)
+docker compose build                 # 初回 20-30 分 (.env から UID/GID を自動読込)
+docker compose up -d                 # 初回起動時にコンテナ内 colcon build (10 分)
+docker compose exec tms restore-db.sh # DB seed 投入 (初回のみ)
 ```
 
-前提条件（ホスト OS / vcstool / X サーバ 等）と各ステップの解説は [docs/setup.md](docs/setup.md) 参照。
+前提条件（ホスト OS / vcstool / X サーバ 等）と各ステップの解説は [docs/setup.md](docs/setup.md) 参照。`.env` は host 固有なので gitignored、`.env.example` を雛形に編集する。
 
 ## 動作確認 (task_id=4)
 
@@ -64,14 +68,9 @@ docker compose down     # コンテナ停止
 
 ## RMW 切替
 
-デフォルトは Cyclone DDS (`rmw_cyclonedds_cpp`)。Node-RED 並列運用と host `zenoh-bridge-ros2dds` 経由の WAN 接続が両方とも Cyclone DDS 前提なため、container 側もそれに揃える。Fast DDS が必要な場合は env で override。
+デフォルトは Cyclone DDS (`rmw_cyclonedds_cpp`)。compose.yaml で `CYCLONEDDS_URI` を repo 直下の [`cyclonedds.conf`](cyclonedds.conf) (localhost-only multicast + DontRoute) に固定済なので、Node-RED ([shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera)) の `launch_content/cyclone_profile.xml` と同一 profile になり、同 host 内 container 間で discovery が両方向に通る。Fast DDS が必要なら `.env` で `RMW_IMPLEMENTATION=rmw_fastrtps_cpp` に上書き。
 
-| RMW | 起動コマンド |
-|---|---|
-| Cyclone DDS (default) | `docker compose up -d` |
-| Fast DDS | `RMW_IMPLEMENTATION=rmw_fastrtps_cpp docker compose up -d` |
-
-Node-RED ([shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera)) との同 host 並列運用手順と、WAN / 複数現場集約用に host で zenoh-bridge-ros2dds を立てる方針は [docs/usage.md](docs/usage.md) 参照。
+詳細 (Node-RED 並列運用手順、WAN / 複数現場集約用に host で zenoh-bridge-ros2dds を立てる方針) は [docs/usage.md](docs/usage.md) 参照。
 
 ## ドキュメント
 

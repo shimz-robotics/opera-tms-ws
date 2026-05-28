@@ -30,11 +30,13 @@ services:
       # デフォルトは Cyclone DDS。nodered-ros2-opera (Cyclone hardcoded) との同 host 並列 + host
       # zenoh-bridge-ros2dds 経由 WAN 接続の両シナリオに揃えるための選択。
       - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}
-      # Cyclone DDS の XML config。未設定なら built-in default (host NIC の multicast) で動く。
-      - CYCLONEDDS_URI=${CYCLONEDDS_URI:-}
+      # 同 host で nodered と localhost multicast で peer-to-peer する想定のため、
+      # repo 直下の cyclonedds.conf を bind mount で固定して指す (override 不要)。
+      - CYCLONEDDS_URI=/opt/opera-tms/cyclonedds.conf
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${XAUTHORITY:-${HOME}/.Xauthority}:/home/ros/.Xauthority:ro
+      - ./cyclonedds.conf:/opt/opera-tms/cyclonedds.conf:ro
       # Bind mount the entire workspace src/ — ros2_tms_for_construction and
       # all external deps (populated by `vcs import` on the host) live here.
       - ./src/:/workspace/src/

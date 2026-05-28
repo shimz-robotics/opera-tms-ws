@@ -49,17 +49,17 @@ docker compose down -v      # named volume ごと削除（DB・build キャッ�
 docker compose up -d
 ```
 
-通常はこれだけで OK。`CYCLONEDDS_URI` 未設定なら Cyclone DDS の built-in default で全 NIC を multicast listen するので、同 host 内の nodered (`<DontRoute>true</DontRoute>` 指定済) とも localhost multicast 経由で discovery する。
-
-profile XML を明示したい場合 (共有マシンで他人の multicast ノイズを切る / 仮想 NIC・VPN・bridge が複数あり Cyclone が誤った interface に出るのを防ぐ等):
-
-```bash
-CYCLONEDDS_URI=file:///workspace/src/cyclonedds.conf docker compose up -d
-```
-
-profile XML は host の `src/cyclonedds.conf` (gitignored) に置けば `./src/:/workspace/src/` の bind mount 経由で container 内に見える。サンプル profile は後述 Node-RED セクション参照。
+これだけで OK。compose.yaml で `CYCLONEDDS_URI=/opt/opera-tms/cyclonedds.conf` を hardcode、repo 直下の [`cyclonedds.conf`](../cyclonedds.conf) (localhost-only multicast + `<DontRoute>true</DontRoute>`) を bind mount しているため、起動時から nodered と同一 profile で動く。env override は不要。
 
 ### Fast DDS に戻す
+
+`.env` で:
+
+```
+RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+```
+
+または一時的に:
 
 ```bash
 RMW_IMPLEMENTATION=rmw_fastrtps_cpp docker compose up -d
@@ -73,7 +73,10 @@ docker inspect opera_tms_dev \
   | grep -E "RMW|CYCLONE|DOMAIN"
 ```
 
-起動後に必ず確認。`.env` で値を上書きしたつもりでも、shell の export 漏れで compose の default にフォールバックすることがある。
+期待値:
+- `RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
+- `CYCLONEDDS_URI=/opt/opera-tms/cyclonedds.conf`
+- `ROS_DOMAIN_ID=0`
 
 ### Zenoh (WAN / 複数現場集約)
 
@@ -103,32 +106,12 @@ docker compose up -d
 
 ## Node-RED (nodered-ros2-opera) との並列運用
 
-[`shimz-robotics/nodered-ros2-opera`](https://github.com/shimz-robotics/nodered-ros2-opera) は Cyclone DDS hardcoded (`rmw_cyclonedds_cpp` + `launch_content/cyclone_profile.xml` を `CYCLONEDDS_URI` で指す)。両者を同 host で起動するだけで DDS discovery が通る。
-
-### profile を揃える
-
-nodered 側 `launch_content/cyclone_profile.xml` と同等の内容を TMS 側にも置く。host の `src/cyclonedds.conf` (gitignored) に以下を保存:
-
-```xml
-<?xml version="1.0" encoding="UTF-8" ?>
-<CycloneDDS>
- <Domain>
-     <General>
-         <Interfaces>
-            <NetworkInterface address="127.0.0.1" multicast="true"/>
-         </Interfaces>
-         <DontRoute>true</DontRoute>
-     </General>
- </Domain>
-</CycloneDDS>
-```
-
-両 profile の `<DontRoute>` / `<NetworkInterface>` が一致していないと discovery が片方向になることがある。
+[`shimz-robotics/nodered-ros2-opera`](https://github.com/shimz-robotics/nodered-ros2-opera) は Cyclone DDS hardcoded (`rmw_cyclonedds_cpp` + `launch_content/cyclone_profile.xml` を `CYCLONEDDS_URI` で指す)。本リポも repo 直下の [`cyclonedds.conf`](../cyclonedds.conf) に同等内容を tracked で置いて bind mount するので、両者の profile は揃っており、同 host で立ち上げるだけで DDS discovery が両方向に通る。
 
 ### 起動
 
 ```bash
-# TMS 側 (このリポ) — Cyclone DDS がデフォルトなのでそのまま up
+# TMS 側 (このリポ)
 cd opera-tms-ws
 docker compose up -d
 
@@ -137,7 +120,7 @@ cd ../nodered-ros2-opera
 docker compose up -d
 ```
 
-両 container 共に `network_mode: host` + `ROS_DOMAIN_ID=0` (デフォルト) で立ち上がり、nodered 側 profile の `<DontRoute>true</DontRoute>` + localhost multicast を経由して TMS と discovery する。共有マシンで他人の multicast を切りたい時のみ、TMS 側も `CYCLONEDDS_URI=file:///workspace/src/cyclonedds.conf docker compose up -d` で同 profile を明示する (profile XML 例は次節)。
+両 container 共に `network_mode: host` + `ROS_DOMAIN_ID=0` (デフォルト) で立ち上がる。nodered と TMS の `<DontRoute>true</DontRoute>` + `<NetworkInterface address="127.0.0.1" multicast="true"/>` profile が一致しているので localhost multicast 経由で peer-to-peer 通信する。
 
 ### discovery 確認
 
