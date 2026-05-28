@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# opera-tms-dev container entrypoint.
+# opera-cps-dev container entrypoint.
 #
 # First phase (as root):
 #   - Fix ownership of named volumes (Docker creates them as root on first

@@ -1,9 +1,9 @@
-name: opera-tms-dev
+name: opera-cps-dev
 
 services:
   mongodb:
     image: mongo:6.0
-    container_name: opera_tms_mongodb
+    container_name: opera_cps_mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
@@ -17,8 +17,8 @@ services:
       args:
         USER_UID: ${UID:-1000}
         USER_GID: ${GID:-1000}
-    image: opera-tms-dev:latest
-    container_name: opera_tms_dev
+    image: opera-cps-dev:latest
+    container_name: opera_cps_dev
     network_mode: host
     shm_size: 1g
     environment:
@@ -32,11 +32,11 @@ services:
       - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}
       # 同 host で nodered と localhost multicast で peer-to-peer する想定のため、
       # repo 直下の cyclonedds.conf を bind mount で固定して指す (override 不要)。
-      - CYCLONEDDS_URI=/opt/opera-tms/cyclonedds.conf
+      - CYCLONEDDS_URI=/opt/opera-cps/cyclonedds.conf
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${XAUTHORITY:-${HOME}/.Xauthority}:/home/ros/.Xauthority:ro
-      - ./cyclonedds.conf:/opt/opera-tms/cyclonedds.conf:ro
+      - ./cyclonedds.conf:/opt/opera-cps/cyclonedds.conf:ro
       # Bind mount the entire workspace src/ — ros2_tms_for_construction and
       # all external deps (populated by `vcs import` on the host) live here.
       - ./src/:/workspace/src/
