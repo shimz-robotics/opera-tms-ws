@@ -24,17 +24,21 @@ ROS 2 TMS for Construction の **開発用 meta-workspace**。Docker + vcstool �
 git clone https://github.com/shimz-robotics/opera-tms-ws.git
 cd opera-tms-ws
 
+# per-host 設定 (UID/GID 等) を .env に固定 — 初回のみ
+cp .env.example .env
+sed -i "s/^UID=.*/UID=$(id -u)/; s/^GID=.*/GID=$(id -g)/" .env
+
 mkdir -p src
 vcs import src/ < src.repos
 vcs import src/ < src.private.repos || true
 
 xhost +local:
-UID=$(id -u) GID=$(id -g) docker compose build      # 初回 20-30 分
-docker compose up -d                                  # 初回起動時にコンテナ内 colcon build (10 分)
-docker compose exec tms restore-db.sh                # DB seed 投入 (初回のみ)
+docker compose build                 # 初回 20-30 分 (.env から UID/GID を自動読込)
+docker compose up -d                 # 初回起動時にコンテナ内 colcon build (10 分)
+docker compose exec tms restore-db.sh # DB seed 投入 (初回のみ)
 ```
 
-前提条件（ホスト OS / vcstool / X サーバ 等）と各ステップの解説は [docs/setup.md](docs/setup.md) 参照。
+前提条件（ホスト OS / vcstool / X サーバ 等）と各ステップの解説は [docs/setup.md](docs/setup.md) 参照。`.env` は host 固有なので gitignored、`.env.example` を雛形に編集する。
 
 ## 動作確認 (task_id=4)
 
@@ -61,6 +65,20 @@ RViz の初期姿勢回避（`boom_joint` を下げて Plan & Execute）→ `tms
 ```bash
 docker compose down     # コンテナ停止
 ```
+
+## RMW 切替
+
+デフォルトは Cyclone DDS (`rmw_cyclonedds_cpp`)。compose.yaml で `CYCLONEDDS_URI` を repo 直下の [`cyclonedds.conf`](cyclonedds.conf) (localhost-only multicast + DontRoute) に固定済なので、Node-RED ([shimz-robotics/nodered-ros2-opera](https://github.com/shimz-robotics/nodered-ros2-opera)) の `launch_content/cyclone_profile.xml` と同一 profile になり、同 host 内 container 間で discovery が両方向に通る。Fast DDS が必要なら `.env` で `RMW_IMPLEMENTATION=rmw_fastrtps_cpp` に上書き。
+
+### LAN 上の別 PC と直接 DDS 接続したい場合
+
+`cyclonedds.conf` は **同 host 並列運用に最適化** された localhost-only profile のため、別 PC 上の ROS 2 ノードとは直接 discover しない。次のいずれかを選択:
+
+1. **host で [`zenoh-bridge-ros2dds`](https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds) を立てる** (推奨、WAN / NAT / 複数現場でもそのまま使える、詳細 [docs/usage.md](docs/usage.md))
+2. **`compose.override.yaml`** で LAN 向け interface 指定の profile (`<NetworkInterface address="<host-IP>"/>` 等) を bind mount し直す
+3. **Fast DDS に切り替え** (`.env` で `RMW_IMPLEMENTATION=rmw_fastrtps_cpp`)、LAN 内自動 discovery を利用
+
+詳細 (Node-RED 並列運用手順、host zenoh-bridge-ros2dds 起動手順) は [docs/usage.md](docs/usage.md) 参照。
 
 ## ドキュメント
 
